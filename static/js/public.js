@@ -5,6 +5,15 @@ function MenuCtrl($scope, $http) {
 }
 
 function BlogPostCtrl($scope, $http) {
+    // Function to check if current session is authenticated with superuser
+    $scope.checkIsSuperuser = function() {
+        $http.get('/api/is-superuser/').success(function(data){
+            $scope.isSuperuser = data == "yes";
+        });
+    }
+    $scope.checkIsSuperuser();
+
+    // Function to update blog post list
     $scope.updateBlogPosts = function() {
         $http.get('/api/blog/post/').success(function(data){
             $scope.blogPosts = data.posts;
@@ -17,7 +26,7 @@ function BlogPostCtrl($scope, $http) {
         var params = {
             Title: this.Title,
             Content: this.Content,
-            Tags: this.Tags
+            Tags: this.Tags ? this.Tags : ""
         };
 
         $http.post('/api/blog/post/add/', encodeUrlVars(params)).success(function(data){

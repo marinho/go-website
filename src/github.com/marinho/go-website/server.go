@@ -14,18 +14,21 @@ import (
     "strconv"
     "errors"
     "strings"
-    "time"
+    //"time"
     "labix.org/v2/mgo"
     //"labix.org/v2/mgo/bson"
     "github.com/gorilla/mux"
+    "github.com/gorilla/sessions"
     "github.com/marinho/go-website"
 )
 
 const VERSION = "0.1"
 const HTTP_ADDRESS = ":8080"
 const DEFAULT_AUTHOR = "Mario"
+const SUPER_USERNAME = "admin"
 
 var dbDefaultConn *mgo.Session
+var sessionStore = sessions.NewCookieStore([]byte("mbSessionId"))
 
 /* Configuration and parameters */
 
@@ -141,13 +144,40 @@ func HomeHandler(c http.ResponseWriter, req *http.Request) {
     }
 }
 
+func GetSession(c http.ResponseWriter, req *http.Request) (*sessions.Session, error) {
+    return sessionStore.Get(req, "mbSession")
+}
+
 func LoginHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
-    expiration := time.Now().AddDate(1, 0, 0)
-    cookie := http.Cookie{Name:"mbAuth", Value:"LetTarLin", Expires:expiration}
-    http.SetCookie(c, &cookie)
+
+    // Starts a session
+    session, err := GetSession(c, req)
+    if err == nil {
+        session.Values["username"] = SUPER_USERNAME
+        session.Save(req, c)
+    }
+
     http.Redirect(c, req, "/", 302)
-    //io.WriteString(c, "hey")
+}
+
+func IsSuperuserHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    var data string
+
+    c.Header().Add("Content-Type", "text/plain")
+
+    // Get current session
+    session, err := GetSession(c, req)
+    if err != nil || session.Values["username"] != SUPER_USERNAME {
+        data = "no"
+    } else {
+        data = "yes"
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+
 }
 
 type MenuItem struct {
@@ -207,14 +237,12 @@ func BlogPostListHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
+// Decorator for URL handlers whose require superuser authentication
 func RequireSuperuser(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
     return func (c http.ResponseWriter, req *http.Request) {
-        var cookie *http.Cookie
-        var err error
-
-        // Checks secret cookie (temporary until support sessions)
-        cookie, err = req.Cookie("mbSuperuser")
-        if err != nil || cookie.Value == "LetTarLin" {
+        // Gets the current session
+        session, err := GetSession(c, req)
+        if err != nil || session.Values["username"] != SUPER_USERNAME {
             // Return error
             http.Error(c, "Unauthorized", http.StatusUnauthorized)
             return
@@ -338,6 +366,7 @@ func main() {
     r := mux.NewRouter()
     r.HandleFunc("/", HomeHandler)
     r.HandleFunc("/login/", LoginHandler)
+    r.HandleFunc("/api/is-superuser/", IsSuperuserHandler)
     r.HandleFunc("/api/menu/item/", MenuItemsHandler)
     r.HandleFunc("/api/blog/post/", BlogPostListHandler)
     r.HandleFunc("/api/blog/post/add/", RequireSuperuser(BlogPostAddHandler))

@@ -29,7 +29,7 @@
                         <h1>{{post.Title}}</h1>
                         <div class="post-details">
                             <span class="post-author">{{post.Author}}, {{post.PubDate | date:'MMM d yyyy @ H:mm'}}</span>
-                            <a href="javascript:void(0)" class="post-delete" ng-click="deleteBlogPost(post.Id)">Delete post</a>
+                            <a href="javascript:void(0)" class="post-delete" ng-click="deleteBlogPost(post.Id)" ng-show="isSuperuser">Delete post</a>
                             <span class="post-tags">Tags: <span class="post-tag" ng-repeat="tag in post.Tags">{{tag}}</span>
                             </span>
                         </div>
@@ -37,7 +37,7 @@
                     </article>
                 </div>
 
-                <form id="new-post" ng-submit="submitNewBlogPost()">
+                <form id="new-post" ng-submit="submitNewBlogPost()" ng-show="isSuperuser">
                     <h1>New post</h1>
                     <div><label>Title</label><input type="text" ng-model="Title" ng-required="true"/></div>
                     <div><label>Content</label><textarea ng-model="Content" ng-required="true"></textarea></div>
