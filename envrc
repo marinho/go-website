@@ -1,0 +1,2 @@
+export GOPATH=`pwd`
+export PS1="(go env) \d \t \u@$HOSTNAME | \w \n$ "

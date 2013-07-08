@@ -1,0 +1,136 @@
+body {
+    font-family: 'Ubuntu', sans-serif;
+    margin: 0;
+    padding: 0;
+    font-size: 12pt;
+    background: #333;
+}
+
+img {
+    border: 0;
+}
+
+body>header {
+    background:rgba(255,255,255,0.5);
+    font-size: 2em;
+    font-weight: bold;
+    padding-top: 40px;
+}
+
+body>header .inner {
+    border-style: solid solid none solid;
+}
+
+body>footer {
+    color: #eee;
+    font-size: 0.8em;
+    text-align: center;
+    padding-bottom: 40px;
+}
+
+body>footer .inner {
+    border-style: none solid solid solid;
+}
+
+body>#menu {
+    background:rgba(255,255,255,0.7);
+}
+
+body>#menu li {
+    list-style: none;
+    display: inline;
+}
+
+body>#menu li a {
+    color: black;
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+body>#menu ul li .sprite {
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+    background-position: 0 0;
+}
+
+body>#menu ul #menu-home .sprite {
+    background-image: url(../img/home-icon.png);
+}
+
+body>#menu ul #menu-life .sprite {
+    background-image: url(../img/life-icon.png);
+}
+
+body>#menu ul #menu-github .sprite {
+    background-image: url(../img/github-icon.png);
+}
+
+body>#menu ul #menu-old .sprite {
+    background-image: url(../img/old-icon.png);
+}
+
+body>#menu ul #menu-gplus .sprite {
+    background-image: url(../img/gplus-icon.png);
+}
+
+body>#menu ul #menu-linkedin .sprite {
+    background-image: url(../img/linkedin-icon.png);
+}
+
+body>#menu li a:hover {
+    background:rgba(0,0,0,0.2);
+    color: white;
+}
+
+body>#menu ul a:hover .sprite {
+    background-position: 16px 0 !important;
+}
+
+body>#content {
+    background:rgba(255,255,255,0.4);
+}
+
+.inner {
+    margin: 0 auto;
+    width: 800px;
+    padding: 20px;
+    border-style: none solid none solid;
+    border-width: 1px;
+    border-color: #eee;
+    background:rgba(255,255,255,0.3);
+}
+
+body>#menu>.inner {
+    padding: 20px 10px;
+    width: 820px;
+}
+
+.blog-post h1 {
+    margin: 0 0 10px 0;
+}
+
+.blog-post .post-content {
+    margin: 0 0 20px 0;
+    padding: 0 0 20px 0;
+    border-bottom: 1px solid #999;
+}
+
+.blog-post .post-tag {
+    margin-right: 5px;
+}
+
+form#new-post label {
+    display: block;
+}
+
+form#new-post input[type=text], form#new-post textarea {
+    width: 500px;
+    border: 1px solid gray;
+    padding: 5px;
+}
+
+form#new-post textarea {
+    height: 200px;
+}

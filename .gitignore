@@ -1,0 +1,4 @@
+.*.swp
+pkg
+bin
+config/local.json
