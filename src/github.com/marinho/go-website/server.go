@@ -25,12 +25,17 @@ import (
 const VERSION = "0.1"
 const HTTP_ADDRESS = ":8080"
 const DEFAULT_AUTHOR = "Mario"
-const SUPER_USERNAME = "admin"
 
 var dbDefaultConn *mgo.Session
 var sessionStore = sessions.NewCookieStore([]byte("mbSessionId"))
 
 /* Configuration and parameters */
+
+type MenuItem struct {
+    Url string
+    Id string
+    Label string
+}
 
 type Configuration struct {
     DBHostname string
@@ -38,6 +43,7 @@ type Configuration struct {
 
     StaticRoot string
     TemplatesRoot string
+    AuthSecret string
 }
 var systemConf Configuration
 
@@ -47,7 +53,7 @@ func defaultConfiguration() Configuration {
         curDir = ""
     }
     return Configuration{DBHostname:"localhost", DBName:"mb", StaticRoot:filepath.Join(curDir,"static"),
-        TemplatesRoot:filepath.Join(curDir,"templates")}
+        TemplatesRoot:filepath.Join(curDir,"templates"), AuthSecret:""}
 }
 
 func loadConfiguration(filePath string) Configuration {
@@ -112,16 +118,63 @@ func showHelp() {
 // Content URL handlers
 
 func renderTemplate(templateName string) (string, error) {
-    templatePath := filepath.Join(systemConf.TemplatesRoot,templateName)
+    var err error
 
-    content, err := ioutil.ReadFile(templatePath)
+    // Base template
+    base_content, err := ioutil.ReadFile(filepath.Join(systemConf.TemplatesRoot,"base.html"))
     if err != nil {
-        return "", errors.New("Couldn't load home.html")
+        return "", errors.New("Couldn't load base.html")
     }
 
-    return string(content), nil
+    // Template file
+    content, err := ioutil.ReadFile(filepath.Join(systemConf.TemplatesRoot,templateName))
+    if err != nil {
+        return "", errors.New("Couldn't load " + templateName)
+    }
+
+    return strings.Replace(string(base_content), "<!-- CONTENT -->", string(content), 1), nil
 }
 
+func GetSession(c http.ResponseWriter, req *http.Request) (*sessions.Session, error) {
+    return sessionStore.Get(req, "mbSession")
+}
+
+func IsSuperuserHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    var data string
+
+    c.Header().Add("Content-Type", "text/plain")
+
+    // Get current session
+    session, err := GetSession(c, req)
+    if err != nil || session.Values["secret"] != systemConf.AuthSecret {
+        data = "no"
+    } else {
+        data = "yes"
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+
+}
+
+// Decorator for URL handlers whose require superuser authentication
+func RequireSuperuser(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+    return func (c http.ResponseWriter, req *http.Request) {
+        // Gets the current session
+        session, err := GetSession(c, req)
+        if err != nil || session.Values["secret"] != systemConf.AuthSecret {
+            // Return error
+            http.Error(c, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+
+        // Call the encapsulated function
+        handler(c, req)
+    }
+}
+
+// Home page handler using template home.html
 func HomeHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
 
@@ -144,48 +197,21 @@ func HomeHandler(c http.ResponseWriter, req *http.Request) {
     }
 }
 
-func GetSession(c http.ResponseWriter, req *http.Request) (*sessions.Session, error) {
-    return sessionStore.Get(req, "mbSession")
-}
-
+// Login page handler
 func LoginHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
 
     // Starts a session
     session, err := GetSession(c, req)
     if err == nil {
-        session.Values["username"] = SUPER_USERNAME
+        session.Values["secret"] = systemConf.AuthSecret
         session.Save(req, c)
     }
 
     http.Redirect(c, req, "/", 302)
 }
 
-func IsSuperuserHandler(c http.ResponseWriter, req *http.Request) {
-    log.Println(req.URL)
-    var data string
-
-    c.Header().Add("Content-Type", "text/plain")
-
-    // Get current session
-    session, err := GetSession(c, req)
-    if err != nil || session.Values["username"] != SUPER_USERNAME {
-        data = "no"
-    } else {
-        data = "yes"
-    }
-
-    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
-    io.WriteString(c, data)
-
-}
-
-type MenuItem struct {
-    Url string
-    Id string
-    Label string
-}
-
+// Menu items handler for the API
 func MenuItemsHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
     var data string
@@ -215,6 +241,7 @@ func MenuItemsHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
+// Blog posts list handler for the API
 func BlogPostListHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
     data := "{\"posts\":[]}"
@@ -237,22 +264,7 @@ func BlogPostListHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
-// Decorator for URL handlers whose require superuser authentication
-func RequireSuperuser(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-    return func (c http.ResponseWriter, req *http.Request) {
-        // Gets the current session
-        session, err := GetSession(c, req)
-        if err != nil || session.Values["username"] != SUPER_USERNAME {
-            // Return error
-            http.Error(c, "Unauthorized", http.StatusUnauthorized)
-            return
-        }
-
-        // Call the encapsulated function
-        handler(c, req)
-    }
-}
-
+// Handler to add a new blog post, for the API
 func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
     c.Header().Add("Content-Type", "text/json")
@@ -279,7 +291,7 @@ func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
             } else {
                 title := postValues["Title"][0]
                 content := postValues["Content"][0]
-                url := cms.Slugify(title)
+                slug := cms.Slugify(title)
                 if len(postValues["Tags"]) > 0 {
                     tags2 := strings.Split(postValues["Tags"][0], ",")
                     for iTag := range tags2 {
@@ -287,7 +299,7 @@ func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
                     }
                 }
 
-                blogPost = cms.BlogPost{Title:title, Content:content, Published:true, Url:url, Author:DEFAULT_AUTHOR, Tags:tags}
+                blogPost = cms.BlogPost{Title:title, Content:content, Published:true, Slug:slug, Author:DEFAULT_AUTHOR, Tags:tags}
                 err = cms.InsertNewBlogPost(dbDefaultConn.DB(systemConf.DBName), &blogPost)
             }
         }
@@ -303,6 +315,7 @@ func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
+// Handler to delete an existing blog post, for the API
 func BlogPostDeleteHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
     c.Header().Add("Content-Type", "text/json")
@@ -331,6 +344,53 @@ func BlogPostDeleteHandler(c http.ResponseWriter, req *http.Request) {
         data = fmt.Sprintf("{\"result\":\"ok\", \"postId\":\"%v\"}", blogPost.Id.Hex())
     } else {
         data = fmt.Sprintf("{\"result\":\"error\"}, \"message\":\"%v\"}", err)
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+}
+
+// Page presentation
+func PageViewHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    c.Header().Add("Content-Type", "text/html")
+    var data string
+    var page cms.Page
+    var err error
+    var templateName string
+
+    // Method not allowed
+    if req.Method != "GET" {
+        http.Error(c, "Invalid method.", http.StatusMethodNotAllowed)
+        return
+    }
+
+    // Parse arguments
+    args := mux.Vars(req)
+
+    // Loading page
+    page, err = cms.GetPage(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
+
+    // Renders the template
+    if err == nil {
+        if page.TemplateName != "" {
+            templateName = page.TemplateName
+        } else {
+            templateName = "page.html"
+        }
+
+        data, err = renderTemplate(templateName)
+
+        if err == nil {
+            // XXX
+        }
+    }
+
+    // Server error
+    if err != nil {
+        log.Printf("Server error: \"%v\"", err)
+        http.Error(c, "Server error", http.StatusInternalServerError)
+        return
     }
 
     c.Header().Add("Content-Length", strconv.Itoa(len(data)))
@@ -371,6 +431,8 @@ func main() {
     r.HandleFunc("/api/blog/post/", BlogPostListHandler)
     r.HandleFunc("/api/blog/post/add/", RequireSuperuser(BlogPostAddHandler))
     r.HandleFunc("/api/blog/post/{postId:\\w+}/delete/", RequireSuperuser(BlogPostDeleteHandler))
+    r.HandleFunc("/{pageSlug:\\w+}/", PageViewHandler)
+
     http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(systemConf.StaticRoot))))
     http.Handle("/", r)
 

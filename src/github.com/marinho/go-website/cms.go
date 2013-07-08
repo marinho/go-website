@@ -11,14 +11,41 @@ import (
 const BLOG_POST_COLL_NAME = "blog_posts"
 type BlogPost struct {
     Id bson.ObjectId `bson:"_id,omitempty"`
-    Url string
+    Slug string
     Title string
-    Content string
+    Content string // In Textile markup format
     Published bool
     PubDate time.Time //bson.MongoTimestamp
     Author string
     Tags []string
 }
+
+const PAGE_COLL_NAME = "pages"
+type Page struct {
+    Id bson.ObjectId `bson:"_id,omitempty"`
+    Slug string
+    Title string
+    Content string // In Textile markup format
+    Published bool
+    PubDate time.Time //bson.MongoTimestamp
+    Author string
+    Tags []string
+    TemplateName string
+}
+
+/* GENERAL */
+
+// Returns the string in small letters, replacing spaces for hifens
+func Slugify(s string) string {
+    // TODO: clean letters to NFKD: http://play.golang.org/p/D7hmrTwi-i
+    for strings.Contains(s, "  ") {
+        s = strings.Replace(s, "  ", " ", -1)
+    }
+    s = strings.Replace(s, " ", "-", -1)
+    return strings.ToLower(s)
+}
+
+/* BLOG POSTS */
 
 // Returns a list of blog post instances
 func GetRecentBlogPosts(db *mgo.Database) ([]BlogPost, error) {
@@ -67,13 +94,16 @@ func DeleteBlogPost(db *mgo.Database, postId string) error {
     return blogPostColl.Remove(bson.M{"_id":bson.ObjectIdHex(postId)})
 }
 
-// Returns the string in small letters, replacing spaces for hifens
-func Slugify(s string) string {
-    // TODO: clean letters to NFKD: http://play.golang.org/p/D7hmrTwi-i
-    for strings.Contains(s, "  ") {
-        s = strings.Replace(s, "  ", " ", -1)
-    }
-    s = strings.Replace(s, " ", "-", -1)
-    return strings.ToLower(s)
+/* PAGES */
+
+// Loads and return a page from database, by slug
+func GetPage(db *mgo.Database, slug string) (Page,error) {
+    var pageColl *mgo.Collection
+    pageColl = db.C(PAGE_COLL_NAME)
+
+    page := Page{}
+    err := pageColl.Find(bson.M{"slug":slug}).One(&page)
+
+    return page, err
 }
 

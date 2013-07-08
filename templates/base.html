@@ -1,0 +1,38 @@
+<!doctype html>
+<html ng-app>
+    <head>
+        <title>MarinhoBrandao.com</title>
+        <link rel="icon" href="/static/favicon.ico" type="image/x-icon"/>
+        <link href='http://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic' rel='stylesheet' type='text/css'>
+        <link rel="stylesheet" href="/static/css/base.css" type="text/css"/>
+        <script src="/static/js/angular.min.js"></script>
+    </head>
+    <body ng-controller="GeneralCtrl">
+        <header>
+            <div class="inner">
+                Marinho Brandao
+            </div>
+        </header>
+
+        <section id="menu" ng-controller="MenuCtrl">
+            <ul class="inner">
+                <li ng-repeat="item in menuItems" id="{{item.Id}}">
+                    <a href="{{item.Url}}"><img class="sprite" src="/static/img/space.png"/><span class="label">{{item.Label}}</span></a>
+                </li>
+            </ul>
+        </section>
+
+        <section id="content">
+<!-- CONTENT -->
+        </section>
+
+        <footer>
+            <div class="inner">
+                Copyright &copy; 2008-2013 - Marinho Brandao - Powered by Go, MongoDB, Nginx, Ubuntu Linux and other free software
+            </div>
+        </footer>
+
+        <script src="/static/js/showdown.js"></script>
+        <script src="/static/js/public.js"></script>
+    </body>
+</html>

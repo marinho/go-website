@@ -1,3 +1,6 @@
 {"DBHostname": "localhost",
  "DBName": "mb",
+ "StaticRoot": "static",
+ "TemplatesRoot": "templates",
+ "AuthSecret": "HeyHoLetsGo"
 }

@@ -1,10 +1,12 @@
+angular.module('mbApp', []);
+
 function MenuCtrl($scope, $http) {
     $http.get('/api/menu/item/').success(function(data){
         $scope.menuItems = data.items;
     });
 }
 
-function BlogPostCtrl($scope, $http) {
+function GeneralCtrl($scope, $http) {
     // Function to check if current session is authenticated with superuser
     $scope.checkIsSuperuser = function() {
         $http.get('/api/is-superuser/').success(function(data){
@@ -13,6 +15,14 @@ function BlogPostCtrl($scope, $http) {
     }
     $scope.checkIsSuperuser();
 
+    // Markdown processor
+    $scope.converter = new Showdown.converter();
+    $scope.processMarkdown = function(raw) {
+        return $scope.converter.makeHtml(raw);
+    }
+}
+
+function BlogPostCtrl($scope, $http) {
     // Function to update blog post list
     $scope.updateBlogPosts = function() {
         $http.get('/api/blog/post/').success(function(data){
@@ -42,6 +52,10 @@ function BlogPostCtrl($scope, $http) {
             });
         }
     }
+}
+
+function PageCtrl($scope, $http) {
+    // TODO
 }
 
 function encodeUrlVars(obj) {
