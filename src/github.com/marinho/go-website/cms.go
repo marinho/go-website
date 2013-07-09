@@ -30,7 +30,6 @@ type Page struct {
     PubDate time.Time //bson.MongoTimestamp
     Author string
     Tags []string
-    TemplateName string
 }
 
 /* GENERAL */

@@ -124,6 +124,8 @@ func renderTemplate(templateName string) (string, error) {
     base_content, err := ioutil.ReadFile(filepath.Join(systemConf.TemplatesRoot,"base.html"))
     if err != nil {
         return "", errors.New("Couldn't load base.html")
+    } else if templateName == "base.html" {
+        return string(base_content), nil
     }
 
     // Template file
@@ -186,7 +188,7 @@ func HomeHandler(c http.ResponseWriter, req *http.Request) {
         return
     }
 
-    content, err := renderTemplate("home.html")
+    content, err := renderTemplate("base.html")
     if err != nil {
         log.Println(err)
         c.Header().Add("Content-Length", strconv.Itoa(len("Failed")))
@@ -350,14 +352,12 @@ func BlogPostDeleteHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
-// Page presentation
-func PageViewHandler(c http.ResponseWriter, req *http.Request) {
+func PageInfoHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
-    c.Header().Add("Content-Type", "text/html")
-    var data string
+    c.Header().Add("Content-Type", "text/json")
     var page cms.Page
     var err error
-    var templateName string
+    data := "{\"result\":\"error\"}"
 
     // Method not allowed
     if req.Method != "GET" {
@@ -372,18 +372,46 @@ func PageViewHandler(c http.ResponseWriter, req *http.Request) {
     page, err = cms.GetPage(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
 
     // Renders the template
+    if err != nil {
+        http.Error(c, "Not found", http.StatusNotFound)
+        return
+    }
+
+    // Encoding to JSON
+    b, err := json.Marshal(page)
     if err == nil {
-        if page.TemplateName != "" {
-            templateName = page.TemplateName
-        } else {
-            templateName = "page.html"
-        }
+        data = "{\"result\":\"ok\", \"page\":" + string(b) + "}"
+    } else {
+        fmt.Println("error:", err)
+    }
 
-        data, err = renderTemplate(templateName)
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+}
 
-        if err == nil {
-            // XXX
-        }
+// Page presentation -- TODO: remove this and use HomeHandler instead
+func PageViewHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    c.Header().Add("Content-Type", "text/html")
+    var data string
+    var page cms.Page
+    var err error
+
+    // Method not allowed
+    if req.Method != "GET" {
+        http.Error(c, "Invalid method.", http.StatusMethodNotAllowed)
+        return
+    }
+
+    // Parse arguments
+    args := mux.Vars(req)
+
+    // Loading page
+    page, err = cms.GetPage(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
+
+    // Renders the template
+    if err == nil && page.Title != "" {
+        data, err = renderTemplate("base.html")
     }
 
     // Server error
@@ -431,9 +459,11 @@ func main() {
     r.HandleFunc("/api/blog/post/", BlogPostListHandler)
     r.HandleFunc("/api/blog/post/add/", RequireSuperuser(BlogPostAddHandler))
     r.HandleFunc("/api/blog/post/{postId:\\w+}/delete/", RequireSuperuser(BlogPostDeleteHandler))
-    r.HandleFunc("/{pageSlug:\\w+}/", PageViewHandler)
+    r.HandleFunc("/api/page/{pageSlug:[\\w\\-]+}/", PageInfoHandler)
+    r.HandleFunc("/{pageSlug:[\\w\\-]+}/", PageViewHandler)
 
     http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(systemConf.StaticRoot))))
+    http.Handle("/templates/", http.StripPrefix("/templates/", http.FileServer(http.Dir(systemConf.TemplatesRoot))))
     http.Handle("/", r)
 
     // Start serving!

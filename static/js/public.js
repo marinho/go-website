@@ -1,4 +1,20 @@
-angular.module('mbApp', []);
+angular.module('mbApp', [], function($routeProvider, $locationProvider) {
+    $locationProvider.html5Mode(true);
+
+    $routeProvider.when('/', {
+        templateUrl: '/templates/home.html',
+        controller: BlogPostCtrl
+        // resolve: {
+        // }
+    });
+
+    $routeProvider.when('/:pageSlug/', {
+        templateUrl: '/templates/page.html',
+        controller: PageCtrl
+        // resolve: {
+        // }
+    });
+});
 
 function MenuCtrl($scope, $http) {
     $http.get('/api/menu/item/').success(function(data){
@@ -54,8 +70,16 @@ function BlogPostCtrl($scope, $http) {
     }
 }
 
-function PageCtrl($scope, $http) {
-    // TODO
+function PageCtrl($scope, $routeParams, $http) {
+    $scope.params = $routeParams;
+
+    // Function to load page data
+    $scope.loadPage = function() {
+        $http.get('/api/page/'+$scope.params.pageSlug+'/').success(function(data){
+            $scope.pageInfo = data.page;
+        });
+    }
+    $scope.loadPage();
 }
 
 function encodeUrlVars(obj) {
