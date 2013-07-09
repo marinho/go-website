@@ -106,3 +106,16 @@ func GetPage(db *mgo.Database, slug string) (Page,error) {
     return page, err
 }
 
+// Returns true if a page is found
+func PageExists(db *mgo.Database, slug string) bool {
+    var pageColl *mgo.Collection
+    pageColl = db.C(PAGE_COLL_NAME)
+
+    count, err := pageColl.Find(bson.M{"slug":slug}).Count()
+    if err == nil && count >= 1 {
+        return true
+    }
+
+    return false
+}
+

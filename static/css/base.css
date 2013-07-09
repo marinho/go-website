@@ -11,14 +11,17 @@ img {
 }
 
 body>header {
-    background:rgba(255,255,255,0.5);
-    font-size: 2em;
+    background:rgba(255,255,255,0.5) url(/static/img/header-photo.jpg) no-repeat center;
+    font-size: 2.5em;
     font-weight: bold;
     padding-top: 40px;
+    height: 314px;
 }
 
 body>header .inner {
-    border-style: solid solid none solid;
+    margin-top: 235px;
+    border: none;
+    background:none;
 }
 
 body>footer {
@@ -56,27 +59,31 @@ body>#menu ul li .sprite {
 }
 
 body>#menu ul #menu-home .sprite {
-    background-image: url(../img/home-icon.png);
+    background-image: url(../img/icon-home.png);
 }
 
 body>#menu ul #menu-life .sprite {
-    background-image: url(../img/life-icon.png);
+    background-image: url(../img/icon-life.png);
+}
+
+body>#menu ul #menu-legacy .sprite {
+    background-image: url(../img/icon-legacy.png);
 }
 
 body>#menu ul #menu-github .sprite {
-    background-image: url(../img/github-icon.png);
+    background-image: url(../img/icon-github.png);
 }
 
 body>#menu ul #menu-old .sprite {
-    background-image: url(../img/old-icon.png);
+    background-image: url(../img/icon-old.png);
 }
 
 body>#menu ul #menu-gplus .sprite {
-    background-image: url(../img/gplus-icon.png);
+    background-image: url(../img/icon-gplus.png);
 }
 
 body>#menu ul #menu-linkedin .sprite {
-    background-image: url(../img/linkedin-icon.png);
+    background-image: url(../img/icon-linkedin.png);
 }
 
 body>#menu li a:hover {
@@ -108,6 +115,10 @@ body>#menu>.inner {
 }
 
 .blog-post h1 {
+    margin: 0 0 10px 0;
+}
+
+.page-view h1 {
     margin: 0 0 10px 0;
 }
 

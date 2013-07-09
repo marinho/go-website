@@ -224,9 +224,9 @@ func MenuItemsHandler(c http.ResponseWriter, req *http.Request) {
     menuItemsList := make([]MenuItem,0)
     menuItemsList = append(menuItemsList, MenuItem{Url:"/", Id:"menu-home", Label:"Home"})
     menuItemsList = append(menuItemsList, MenuItem{Url:"/real-life/", Id:"menu-life", Label:"Real life"})
+    menuItemsList = append(menuItemsList, MenuItem{Url:"/legacy/", Id:"menu-legacy", Label:"Legacy"})
     menuItemsList = append(menuItemsList, MenuItem{Url:"http://github.com/marinho", Id:"menu-github", Label:"Github"})
     menuItemsList = append(menuItemsList, MenuItem{Url:"http://old.marinhobrandao.com/", Id:"menu-old", Label:"Old site"})
-    /*menuItemsList = append(menuItemsList, MenuItem{Url:"/snippets/", Id:"menu-snippets", Label:"Snippets"})*/
     menuItemsList = append(menuItemsList, MenuItem{Url:"https://plus.google.com/108430754321695774288/posts", Id:"menu-gplus", Label:"Google+"})
     menuItemsList = append(menuItemsList, MenuItem{Url:"http://de.linkedin.com/in/marinhobrandao", Id:"menu-linkedin", Label:"Linkedin"})
 
@@ -297,7 +297,9 @@ func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
                 if len(postValues["Tags"]) > 0 {
                     tags2 := strings.Split(postValues["Tags"][0], ",")
                     for iTag := range tags2 {
-                        tags = append(tags, strings.Trim(tags2[iTag], " "))
+                        if strings.Trim(tags2[iTag], " ") != "" {
+                            tags = append(tags, strings.Trim(tags2[iTag], " "))
+                        }
                     }
                 }
 
@@ -394,8 +396,7 @@ func PageViewHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
     c.Header().Add("Content-Type", "text/html")
     var data string
-    var page cms.Page
-    var err error
+    var found bool
 
     // Method not allowed
     if req.Method != "GET" {
@@ -407,16 +408,22 @@ func PageViewHandler(c http.ResponseWriter, req *http.Request) {
     args := mux.Vars(req)
 
     // Loading page
-    page, err = cms.GetPage(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
-
-    // Renders the template
-    if err == nil && page.Title != "" {
-        data, err = renderTemplate("base.html")
+    if args["pageSlug"] == "404" {
+        found = true
+    } else {
+        found = cms.PageExists(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
     }
 
-    // Server error
+    // Page not found
+    if !found {
+        http.Error(c, fmt.Sprintf("Page \"%v\" not found", args["pageSlug"]), http.StatusNotFound)
+        return
+    }
+
+    // Renders the template
+    data, err := renderTemplate("base.html")
+
     if err != nil {
-        log.Printf("Server error: \"%v\"", err)
         http.Error(c, "Server error", http.StatusInternalServerError)
         return
     }
@@ -450,18 +457,25 @@ func main() {
     // Optional. Switch the session to a monotonic behavior.
     dbDefaultConn.SetMode(mgo.Monotonic, true)
 
-    // Server
+    // URL routes
     r := mux.NewRouter()
+
     r.HandleFunc("/", HomeHandler)
     r.HandleFunc("/login/", LoginHandler)
     r.HandleFunc("/api/is-superuser/", IsSuperuserHandler)
     r.HandleFunc("/api/menu/item/", MenuItemsHandler)
+
+    // Blog posts
     r.HandleFunc("/api/blog/post/", BlogPostListHandler)
     r.HandleFunc("/api/blog/post/add/", RequireSuperuser(BlogPostAddHandler))
     r.HandleFunc("/api/blog/post/{postId:\\w+}/delete/", RequireSuperuser(BlogPostDeleteHandler))
-    r.HandleFunc("/api/page/{pageSlug:[\\w\\-]+}/", PageInfoHandler)
-    r.HandleFunc("/{pageSlug:[\\w\\-]+}/", PageViewHandler)
 
+    // Pages
+    r.HandleFunc("/api/page/{pageSlug:[\\w\\-]+}/", PageInfoHandler)
+    r.HandleFunc("/{pageSlug:[\\w\\-]+}", PageViewHandler)
+    r.HandleFunc("/{pageSlug:[\\w\\-]+}/", PageViewHandler) // This is needed to support both, but maybe there's an alternative
+
+    // Hardcoded ones
     http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(systemConf.StaticRoot))))
     http.Handle("/templates/", http.StripPrefix("/templates/", http.FileServer(http.Dir(systemConf.TemplatesRoot))))
     http.Handle("/", r)
