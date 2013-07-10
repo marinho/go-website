@@ -1,11 +1,11 @@
-This is just an experimental project to cover T Dispatch's Auto Dispatch service,
-written in Go language and using the Fleet API to request available drivers,
-bookings picking up soon and to dispatch bookings.
+This is just an experimental project of a simple CMS system written in Go language
+and AngularJS framework. The main goal with this project is to explore Angular JS
+to understand how it works.
 
 ## Setup
 
 1. You first need to install **Go lang**
-1. You must have MongoDB installed with a T Dispatch database
+1. You must have MongoDB installed
 
 ## How to run it in Linux or MacOSX
 
@@ -19,18 +19,27 @@ bookings picking up soon and to dispatch bookings.
 
 ```
 go get labix.org/v2/mgo
-go install github.com/TDispatch/fleet-api
-go install github.com/TDispatch/auto-dispatch
+go get github.com/gorilla/mux
+go get github.com/gorilla/sessions
 ```
 
 1. Run the bot with:
 
 ```
-go run auto_dispatch_bot.go
+go run src/github.com/marinho/go-website/server.go
 ```
 
-1. To compile and run the binary, you have to install "github.com/TDispatch/auto-dispatch" and run:
+1. To compile and run the binary, you have to install "github.com/marinho/go-website" and run:
 
 ```
-./bin/auto-dispatch
+./bin/server
 ```
+
+## To do
+
+1. Image upload tool
+1. Image thumbnail function
+1. Template editor and uploader
+1. Better configuration tools
+1. Fixtures loader command
+
