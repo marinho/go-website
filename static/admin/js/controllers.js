@@ -4,6 +4,10 @@ function AdminCtrl($scope, $http) {
     $scope.updateMenu = function(){
         $http.get('/api/admin/menu/').success(function(data){
             $scope.menuItems = data.items;
+        }).error(function(data, status, headers, config) {
+            if (status != 200) {
+                $scope.menuItems = [{Url:"/admin/", Id:"admin-home", Label:"Home"}];
+            }
         });
     }
     $scope.updateMenu();
@@ -23,6 +27,12 @@ function LoginCtrl($scope, $http) {
         $http.post('/login/', $scope.encodeUrlVars(params)).success(function(data){
             var type = data.result == 'error' ? 'error' : 'success';
             $scope.addAlert(data.message, type);
+
+            if (data.result == 'ok') {
+                $scope.updateMenu();
+                $scope.login.Username = "";
+                $scope.login.Password = "";
+            }
         });
     }
 

@@ -6,7 +6,7 @@ var app = angular.module('mbAdmin', ['ui.bootstrap'], function($routeProvider, $
     $routeProvider
         .when('/', {
             templateUrl: '/templates/admin/home.html',
-            controller: BlogPostCtrl
+            controller: LoginCtrl
         })
         .when('/404', {
             templateUrl: '/templates/admin/404.html'

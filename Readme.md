@@ -42,8 +42,13 @@ go run src/github.com/marinho/go-website/server.go
 1. Template editor and uploader
 1. Better configuration tools
 1. Fixtures loader command
+1. Auth module with users instead of hard coded
 
-## Credits
+## Copyrights
 
-TODO: write here the credits for the template author
+* Code under **BSD license**, which means you can use it, change it, distribute it
+  or even sell it compiled. You just should refer to this developer as its original
+  author.
+* The bootstrap template was found in http://bootswatch.com/spacelab/ and was made
+  by [http://thomaspark.me/](Thomas Park)
 

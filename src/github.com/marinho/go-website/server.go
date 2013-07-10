@@ -258,6 +258,19 @@ func LoginHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
+// Login page handler
+func LogoutHandler(c http.ResponseWriter, req *http.Request) {
+    // Gets the current session
+    session, err := GetSession(c, req)
+    if err == nil {
+        session.Values["secret"] = "no"
+        session.Save(req, c)
+    }
+
+    // Redirects to home page
+    http.Redirect(c, req, "/admin/", 302)
+}
+
 // Menu items handler for the API
 func MenuItemsHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
@@ -396,6 +409,14 @@ func BlogPostInfoHandler(c http.ResponseWriter, req *http.Request) {
 
     // Method to update post object
     } else if req.Method == "POST" {
+        // Gets the current session
+        session, err := GetSession(c, req)
+        if err != nil || session.Values["secret"] != systemConf.AuthSecret {
+            // Return error
+            http.Error(c, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+
         body, err := ioutil.ReadAll(req.Body)
         if err == nil {
             postValues, err := url.ParseQuery(string(body))
@@ -535,6 +556,14 @@ func PageInfoHandler(c http.ResponseWriter, req *http.Request) {
 
     // Method to update page object
     } else if req.Method == "POST" {
+        // Gets the current session
+        session, err := GetSession(c, req)
+        if err != nil || session.Values["secret"] != systemConf.AuthSecret {
+            // Return error
+            http.Error(c, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+
         body, err := ioutil.ReadAll(req.Body)
         if err == nil {
             postValues, err := url.ParseQuery(string(body))
@@ -742,6 +771,7 @@ func AdminMenuHandler(c http.ResponseWriter, req *http.Request) {
     menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/", Id:"admin-home", Label:"Home"})
     menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/pages/", Id:"admin-pages", Label:"Pages"})
     menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/blog-posts/", Id:"admin-blog-posts", Label:"Blog Posts"})
+    menuItemsList = append(menuItemsList, MenuItem{Url:"/logout/", Id:"admin-logout", Label:"Logout"})
 
     // Encoding to JSON
     b, err := json.Marshal(menuItemsList)
@@ -786,12 +816,13 @@ func main() {
 
     r.HandleFunc("/", HomeHandler)
     r.HandleFunc("/login/", LoginHandler)
+    r.HandleFunc("/logout/", LogoutHandler)
 
     // Admin
     r.HandleFunc("/admin/", AdminHomeHandler)
-    r.HandleFunc("/admin/pages/", AdminHomeHandler)
-    r.HandleFunc("/admin/blog-posts/", AdminHomeHandler)
-    r.HandleFunc("/api/admin/menu/", AdminMenuHandler)
+    r.HandleFunc("/admin/pages/", RequireSuperuser(AdminHomeHandler))
+    r.HandleFunc("/admin/blog-posts/", RequireSuperuser(AdminHomeHandler))
+    r.HandleFunc("/api/admin/menu/", RequireSuperuser(AdminMenuHandler))
 
     // General API methods
     r.HandleFunc("/api/is-superuser/", IsSuperuserHandler)
