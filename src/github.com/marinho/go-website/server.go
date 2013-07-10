@@ -137,6 +137,26 @@ func renderTemplate(templateName string) (string, error) {
     return strings.Replace(string(base_content), "<!-- CONTENT -->", string(content), 1), nil
 }
 
+func renderAdminTemplate(templateName string) (string, error) {
+    var err error
+
+    // Base template
+    base_content, err := ioutil.ReadFile(filepath.Join(systemConf.TemplatesRoot,"admin","base.html"))
+    if err != nil {
+        return "", errors.New("Couldn't load admin/base.html")
+    } else if templateName == "base.html" {
+        return string(base_content), nil
+    }
+
+    // Template file
+    content, err := ioutil.ReadFile(filepath.Join(systemConf.TemplatesRoot,"admin",templateName))
+    if err != nil {
+        return "", errors.New("Couldn't load " + templateName)
+    }
+
+    return strings.Replace(string(base_content), "<!-- CONTENT -->", string(content), 1), nil
+}
+
 func GetSession(c http.ResponseWriter, req *http.Request) (*sessions.Session, error) {
     return sessionStore.Get(req, "mbSession")
 }
@@ -319,6 +339,83 @@ func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
+func BlogPostInfoHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    c.Header().Add("Content-Type", "text/json")
+    var post cms.BlogPost
+    var err error
+    tags := make([]string,0)
+    data := "{\"result\":\"error\"}"
+
+    // Parse arguments
+    args := mux.Vars(req)
+
+    // Loading blog post
+    post, err = cms.GetBlogPost(dbDefaultConn.DB(systemConf.DBName), args["postId"])
+
+    // Renders the template
+    if err != nil {
+        http.Error(c, "Not found", http.StatusNotFound)
+        return
+    }
+
+    // Method to return post info
+    if req.Method == "GET" {
+        // Encoding to JSON
+        b, err := json.Marshal(post)
+        if err == nil {
+            data = "{\"result\":\"ok\", \"post\":" + string(b) + "}"
+        } else {
+            fmt.Println("error:", err)
+        }
+
+    // Method to update post object
+    } else if req.Method == "POST" {
+        body, err := ioutil.ReadAll(req.Body)
+        if err == nil {
+            postValues, err := url.ParseQuery(string(body))
+            if err == nil {
+                if len(postValues["Title"]) == 0 {
+                    err = errors.New("Title is required")
+                } else if len(postValues["Content"]) == 0 {
+                    err = errors.New("Content is required")
+                } else if len(postValues["Slug"]) == 0 {
+                    err = errors.New("Slug is required")
+                } else {
+                    post.Title = postValues["Title"][0]
+                    post.Content = postValues["Content"][0]
+                    post.Slug = postValues["Slug"][0]
+                    if len(postValues["Tags"]) > 0 {
+                        tags2 := strings.Split(postValues["Tags"][0], ",")
+                        for iTag := range tags2 {
+                            if strings.Trim(tags2[iTag], " ") != "" {
+                                tags = append(tags, strings.Trim(tags2[iTag], " "))
+                            }
+                        }
+                    }
+                    post.Tags = tags
+
+                    err = cms.UpdateBlogPost(dbDefaultConn.DB(systemConf.DBName), &post)
+                }
+            }
+        }
+
+        // Bad request
+        if err != nil {
+            http.Error(c, fmt.Sprintf("Bad request: %v", err), http.StatusBadRequest)
+            return
+        }
+
+    // Method not allowed
+    } else {
+        http.Error(c, "Invalid method.", http.StatusMethodNotAllowed)
+        return
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+}
+
 // Handler to delete an existing blog post, for the API
 func BlogPostDeleteHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
@@ -354,24 +451,46 @@ func BlogPostDeleteHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
+// Pages list handler for the API
+func PageListHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    data := "{\"pages\":[]}"
+
+    c.Header().Add("Content-Type", "text/json")
+
+    // Posts from database
+    pagesList, err := cms.ListPages(dbDefaultConn.DB(systemConf.DBName))
+    if err == nil {
+        // Encoding to JSON
+        b, err := json.Marshal(pagesList)
+        if err == nil {
+            data = "{\"pages\":" + string(b) + "}"
+        } else {
+            fmt.Println("error:", err)
+        }
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+}
+
 func PageInfoHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
     c.Header().Add("Content-Type", "text/json")
     var page cms.Page
     var err error
+    tags := make([]string,0)
     data := "{\"result\":\"error\"}"
-
-    // Method not allowed
-    if req.Method != "GET" {
-        http.Error(c, "Invalid method.", http.StatusMethodNotAllowed)
-        return
-    }
 
     // Parse arguments
     args := mux.Vars(req)
 
     // Loading page
-    page, err = cms.GetPage(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
+    if args["pageSlug"] != "" {
+        page, err = cms.GetPageBySlug(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
+    } else {
+        page, err = cms.GetPage(dbDefaultConn.DB(systemConf.DBName), args["pageId"])
+    }
 
     // Renders the template
     if err != nil {
@@ -379,12 +498,57 @@ func PageInfoHandler(c http.ResponseWriter, req *http.Request) {
         return
     }
 
-    // Encoding to JSON
-    b, err := json.Marshal(page)
-    if err == nil {
-        data = "{\"result\":\"ok\", \"page\":" + string(b) + "}"
+    // Method to return page info
+    if req.Method == "GET" {
+        // Encoding to JSON
+        b, err := json.Marshal(page)
+        if err == nil {
+            data = "{\"result\":\"ok\", \"page\":" + string(b) + "}"
+        } else {
+            fmt.Println("error:", err)
+        }
+
+    // Method to update page object
+    } else if req.Method == "POST" {
+        body, err := ioutil.ReadAll(req.Body)
+        if err == nil {
+            postValues, err := url.ParseQuery(string(body))
+            if err == nil {
+                if len(postValues["Title"]) == 0 {
+                    err = errors.New("Title is required")
+                } else if len(postValues["Content"]) == 0 {
+                    err = errors.New("Content is required")
+                } else if len(postValues["Slug"]) == 0 {
+                    err = errors.New("Slug is required")
+                } else {
+                    page.Title = postValues["Title"][0]
+                    page.Content = postValues["Content"][0]
+                    page.Slug = postValues["Slug"][0]
+                    if len(postValues["Tags"]) > 0 {
+                        tags2 := strings.Split(postValues["Tags"][0], ",")
+                        for iTag := range tags2 {
+                            if strings.Trim(tags2[iTag], " ") != "" {
+                                tags = append(tags, strings.Trim(tags2[iTag], " "))
+                            }
+                        }
+                    }
+                    page.Tags = tags
+
+                    err = cms.UpdatePage(dbDefaultConn.DB(systemConf.DBName), &page)
+                }
+            }
+        }
+
+        // Bad request
+        if err != nil {
+            http.Error(c, fmt.Sprintf("Bad request: %v", err), http.StatusBadRequest)
+            return
+        }
+
+    // Method not allowed
     } else {
-        fmt.Println("error:", err)
+        http.Error(c, "Invalid method.", http.StatusMethodNotAllowed)
+        return
     }
 
     c.Header().Add("Content-Length", strconv.Itoa(len(data)))
@@ -432,6 +596,141 @@ func PageViewHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
+// Handler to add a new page, for the API
+func PageAddHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    c.Header().Add("Content-Type", "text/json")
+    var data string
+    var err error
+    var page cms.Page
+    tags := make([]string,0)
+
+    // Method not allowed
+    if req.Method != "POST" {
+        http.Error(c, "Invalid method.", http.StatusMethodNotAllowed)
+        return
+    }
+
+    // Save the new post
+    body, err := ioutil.ReadAll(req.Body)
+    if err == nil {
+        postValues, err := url.ParseQuery(string(body))
+        if err == nil {
+            if len(postValues["Title"]) == 0 {
+                err = errors.New("Title is required")
+            } else if len(postValues["Content"]) == 0 {
+                err = errors.New("Content is required")
+            } else if len(postValues["Slug"]) == 0 {
+                err = errors.New("Slug is required")
+            } else {
+                title := postValues["Title"][0]
+                content := postValues["Content"][0]
+                slug := postValues["Slug"][0]
+                if len(postValues["Tags"]) > 0 {
+                    tags2 := strings.Split(postValues["Tags"][0], ",")
+                    for iTag := range tags2 {
+                        if strings.Trim(tags2[iTag], " ") != "" {
+                            tags = append(tags, strings.Trim(tags2[iTag], " "))
+                        }
+                    }
+                }
+
+                page = cms.Page{Title:title, Content:content, Published:true, Slug:slug, Author:DEFAULT_AUTHOR, Tags:tags}
+                err = cms.InsertNewPage(dbDefaultConn.DB(systemConf.DBName), &page)
+            }
+        }
+    }
+
+    if err == nil {
+        data = fmt.Sprintf("{\"result\":\"ok\", \"postId\":\"%v\"}", page.Id.Hex())
+    } else {
+        data = fmt.Sprintf("{\"result\":\"error\"}, \"message\":\"%v\"}", err)
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+}
+
+// Handler to delete an existing page, for the API
+func PageDeleteHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    c.Header().Add("Content-Type", "text/json")
+    var data string
+    var err error
+    var page cms.Page
+
+    // Method not allowed
+    if req.Method != "POST" {
+        http.Error(c, "Invalid method.", http.StatusMethodNotAllowed)
+        return
+    }
+
+    // Parse arguments
+    args := mux.Vars(req)
+
+    // Load blog post
+    err = cms.DeletePage(dbDefaultConn.DB(systemConf.DBName), args["pageId"])
+
+    if err != nil {
+        http.Error(c, "Not found", http.StatusNotFound)
+        return
+    }
+
+    if err == nil {
+        data = fmt.Sprintf("{\"result\":\"ok\", \"postId\":\"%v\"}", page.Id.Hex())
+    } else {
+        data = fmt.Sprintf("{\"result\":\"error\"}, \"message\":\"%v\"}", err)
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+}
+
+/* Admin handlers */
+
+// Home page handler for Administration area
+func AdminHomeHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+
+    c.Header().Add("Content-Type", "text/html")
+
+    content, err := renderAdminTemplate("base.html")
+    if err != nil {
+        log.Println(err)
+        c.Header().Add("Content-Length", strconv.Itoa(len("Failed")))
+        io.WriteString(c, "Failed")
+    } else {
+        c.Header().Add("Content-Length", strconv.Itoa(len(content)))
+        io.WriteString(c, content)
+    }
+}
+
+// Menu items handler for the API
+func AdminMenuHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    var data string
+
+    c.Header().Add("Content-Type", "text/json")
+
+    // Menu items list - TODO: move this to database and create a function to load fixtures
+    menuItemsList := make([]MenuItem,0)
+    menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/", Id:"admin-home", Label:"Home"})
+    menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/pages/", Id:"admin-pages", Label:"Pages"})
+    menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/blog-posts/", Id:"admin-blog-posts", Label:"Blog Posts"})
+
+    // Encoding to JSON
+    b, err := json.Marshal(menuItemsList)
+	if err == nil {
+        data = "{\"items\":" + string(b) + "}"
+	} else {
+		fmt.Println("error:", err)
+        data = "{}"
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+}
+
 // Main routine
 
 func main() {
@@ -462,16 +761,29 @@ func main() {
 
     r.HandleFunc("/", HomeHandler)
     r.HandleFunc("/login/", LoginHandler)
+
+    // Admin
+    r.HandleFunc("/admin/", AdminHomeHandler)
+    r.HandleFunc("/admin/pages/", AdminHomeHandler)
+    r.HandleFunc("/admin/blog-posts/", AdminHomeHandler)
+    r.HandleFunc("/api/admin/menu/", AdminMenuHandler)
+
+    // General API methods
     r.HandleFunc("/api/is-superuser/", IsSuperuserHandler)
     r.HandleFunc("/api/menu/item/", MenuItemsHandler)
 
     // Blog posts
     r.HandleFunc("/api/blog/post/", BlogPostListHandler)
+    r.HandleFunc("/api/blog/post/{postId:\\w+}/", BlogPostInfoHandler)
     r.HandleFunc("/api/blog/post/add/", RequireSuperuser(BlogPostAddHandler))
     r.HandleFunc("/api/blog/post/{postId:\\w+}/delete/", RequireSuperuser(BlogPostDeleteHandler))
 
     // Pages
-    r.HandleFunc("/api/page/{pageSlug:[\\w\\-]+}/", PageInfoHandler)
+    r.HandleFunc("/api/page/", PageListHandler)
+    r.HandleFunc("/api/page/{pageId:[\\w\\-]+}/", PageInfoHandler)
+    r.HandleFunc("/api/page/add/", RequireSuperuser(PageAddHandler))
+    r.HandleFunc("/api/page/{pageId:\\w+}/delete/", RequireSuperuser(PageDeleteHandler))
+    r.HandleFunc("/api/page/by-slug/{pageSlug:[\\w\\-]+}/", PageInfoHandler)
     r.HandleFunc("/{pageSlug:[\\w\\-]+}", PageViewHandler)
     r.HandleFunc("/{pageSlug:[\\w\\-]+}/", PageViewHandler) // This is needed to support both, but maybe there's an alternative
 

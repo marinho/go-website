@@ -65,28 +65,6 @@ function BlogPostCtrl($scope, $http) {
         });
     }
     $scope.updateBlogPosts();
-    
-    // New post
-    $scope.submitNewBlogPost = function() {
-        var params = {
-            Title: this.Title,
-            Content: this.Content,
-            Tags: this.Tags ? this.Tags : ""
-        };
-
-        $http.post('/api/blog/post/add/', $scope.encodeUrlVars(params)).success(function(data){
-            $scope.updateBlogPosts();
-        });
-    }
-
-    // Delete a post
-    $scope.deleteBlogPost = function(postId) {
-        if (confirm("Confirm deletion?")) {
-            $http.post('/api/blog/post/'+postId+'/delete/').success(function(data){
-                $scope.updateBlogPosts();
-            });
-        }
-    }
 }
 
 function PageCtrl($scope, $routeParams, $http, $location) {
@@ -94,7 +72,7 @@ function PageCtrl($scope, $routeParams, $http, $location) {
 
     // Function to load page data
     $scope.loadPage = function() {
-        $http.get('/api/page/'+$scope.params.pageSlug+'/')
+        $http.get('/api/page/by-slug/'+$scope.params.pageSlug+'/')
             .success(function(data){
                 $scope.pageInfo = data.page;
             })

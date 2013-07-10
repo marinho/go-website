@@ -1,0 +1,44 @@
+<div class="page-header">
+    <h1>Pages</h1>
+</div>
+
+<div modal="openPageForm" close="closePageForm()" options="opts">
+    <div class="modal-header">
+        <h3>New page</h3>
+    </div>
+    <div class="modal-body">
+        <form name="new-page">
+            <div><label>Title</label><input type="text" ng-model="page.Title" ng-required="true" required/></div>
+            <div><label>Slug</label><input type="text" ng-model="page.Slug" ng-required="true" required/></div>
+            <div><label>Content</label><textarea ng-model="page.Content" ng-required="true" required></textarea></div>
+            <div><label>Tags</label><input type="text" ng-model="page.Tags"/></div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-success" ng-click="submitPageForm()">Save</button>
+        <button class="btn btn-warning cancel" ng-click="closePageForm()">Cancel</button>
+    </div>
+</div>
+
+<table class="table table-bordered table-striped table-hover">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Slug</th>
+        <th>&nbsp;</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr ng-repeat="page in pages" id="page-{{page.Id}}">
+            <td><a href="javascript:void(0)">{{page.Title}}</a></td>
+            <td>{{page.Slug}}</td>
+            <td>
+                <a class="btn btn-warning btn-small" href="javascript:void(0)" ng-click="showPageForm(page.Id)">Edit</a>
+                <a class="btn btn-danger btn-small" href="javascript:void(0)" ng-click="deletePage(page.Id)">Delete</a>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3"><a class="btn btn-primary" href="javascript:void(0)" ng-click="showPageForm()">Add new</a></td>
+        </tr>
+    </tbody>
+</table>

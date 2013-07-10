@@ -1,0 +1,45 @@
+<div class="page-header">
+    <h1>Blog Posts</h1>
+</div>
+
+<div modal="openBlogPostForm" close="closeBlogPostForm()" options="opts">
+    <div class="modal-header">
+        <h3>New blog post</h3>
+    </div>
+    <div class="modal-body">
+        <form name="new-post">
+            <div><label>Title</label><input type="text" ng-model="blogPost.Title" ng-required="true" required/></div>
+            <div><label>Slug</label><input type="text" ng-model="blogPost.Slug" ng-required="true" required/></div>
+            <div><label>Content</label><textarea ng-model="blogPost.Content" ng-required="true" required></textarea></div>
+            <div><label>Tags</label><input type="text" ng-model="blogPost.Tags"/></div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-success" ng-click="submitBlogPostForm()">Save</button>
+        <button class="btn btn-warning cancel" ng-click="closeBlogPostForm()">Cancel</button>
+    </div>
+</div>
+
+<table class="table table-bordered table-striped table-hover">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Slug</th>
+        <th>&nbsp;</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr ng-repeat="post in blogPosts">
+            <td><a href="javascript:void(0)">{{post.Title}}</a></td>
+            <td>{{post.Slug}}</td>
+            <td>
+                <a class="btn btn-warning btn-small" href="javascript:void(0)" ng-click="showBlogPostForm(post.Id)">Edit</a>
+                <a class="btn btn-danger btn-small" href="javascript:void(0)" ng-click="deleteBlogPost(post.Id)">Delete</a>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3"><a class="btn btn-primary" href="javascript:void(0)" ng-click="showBlogPostForm()">Add new</a></td>
+        </tr>
+    </tbody>
+</table>
+

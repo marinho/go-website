@@ -74,6 +74,17 @@ func InsertNewBlogPost(db *mgo.Database, post *BlogPost) error {
     return err
 }
 
+// Returns the Id and the error
+func UpdateBlogPost(db *mgo.Database, post *BlogPost) error {
+    var blogPostColl *mgo.Collection
+    blogPostColl = db.C(BLOG_POST_COLL_NAME)
+
+    // Insert
+    err := blogPostColl.Update(bson.M{"_id":post.Id}, post)
+
+    return err
+}
+
 // Loads and return a blog post from database
 func GetBlogPost(db *mgo.Database, postId string) (BlogPost,error) {
     var blogPostColl *mgo.Collection
@@ -95,8 +106,32 @@ func DeleteBlogPost(db *mgo.Database, postId string) error {
 
 /* PAGES */
 
+// Returns a list of blog post instances
+func ListPages(db *mgo.Database) ([]Page, error) {
+    var pages []Page
+    var pageColl *mgo.Collection
+
+    // Auto Disptach info objects
+    pageColl = db.C(PAGE_COLL_NAME)
+    query := pageColl.Find(bson.M{"published":true}).Sort("title")
+
+    err := query.All(&pages)
+    return pages, err
+}
+
+// Loads and return a page from database, by ID
+func GetPage(db *mgo.Database, pageId string) (Page,error) {
+    var pageColl *mgo.Collection
+    pageColl = db.C(PAGE_COLL_NAME)
+
+    page := Page{}
+    err := pageColl.Find(bson.M{"_id":bson.ObjectIdHex(pageId)}).One(&page)
+
+    return page, err
+}
+
 // Loads and return a page from database, by slug
-func GetPage(db *mgo.Database, slug string) (Page,error) {
+func GetPageBySlug(db *mgo.Database, slug string) (Page,error) {
     var pageColl *mgo.Collection
     pageColl = db.C(PAGE_COLL_NAME)
 
@@ -117,5 +152,39 @@ func PageExists(db *mgo.Database, slug string) bool {
     }
 
     return false
+}
+
+// Returns the Id and the error
+func InsertNewPage(db *mgo.Database, page *Page) error {
+    var pageColl *mgo.Collection
+    pageColl = db.C(PAGE_COLL_NAME)
+
+    // Default empty fields
+    page.Id = bson.NewObjectId()
+    page.PubDate = time.Now()
+
+    // Insert
+    err := pageColl.Insert(page)
+
+    return err
+}
+
+// Returns the Id and the error
+func UpdatePage(db *mgo.Database, page *Page) error {
+    var pageColl *mgo.Collection
+    pageColl = db.C(PAGE_COLL_NAME)
+
+    // Insert
+    err := pageColl.Update(bson.M{"_id":page.Id}, page)
+
+    return err
+}
+
+// Loads and return a page from database
+func DeletePage(db *mgo.Database, pageId string) error {
+    var pageColl *mgo.Collection
+    pageColl = db.C(PAGE_COLL_NAME)
+
+    return pageColl.Remove(bson.M{"_id":bson.ObjectIdHex(pageId)})
 }
 

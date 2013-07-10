@@ -4,19 +4,10 @@
             <h1>{{post.Title}}</h1>
             <div class="post-details">
                 <span class="post-author">{{post.Author}}, {{post.PubDate | date:'MMM d yyyy @ H:mm'}}</span>
-                <a href="javascript:void(0)" class="post-delete" ng-click="deleteBlogPost(post.Id)" ng-show="isSuperuser">Delete post</a>
                 <span class="post-tags">Tags: <span class="post-tag" ng-repeat="tag in post.Tags">{{tag}}</span>
                 </span>
             </div>
             <div class="post-content" ng-bind-html-unsafe="processMarkdown(post.Content)"></div>
         </article>
     </div>
-
-    <form id="new-post" ng-submit="submitNewBlogPost()" ng-show="isSuperuser">
-        <h1>New post</h1>
-        <div><label>Title</label><input type="text" ng-model="Title" ng-required="true" required/></div>
-        <div><label>Content</label><textarea ng-model="Content" ng-required="true" required></textarea></div>
-        <div><label>Tags</label><input type="text" ng-model="Tags"/></div>
-        <button type="submit">Save new Post</button>
-    </form>
 </div>

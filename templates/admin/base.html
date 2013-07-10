@@ -1,0 +1,57 @@
+<!doctype html>
+<html ng-app="mbAdmin">
+    <head>
+        <title>MarinhoBrandao.com | Admin site</title>
+        <link rel="icon" href="/static/favicon.ico" type="image/x-icon"/>
+        <base href="/admin/"/>
+
+        <link href='http://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic' rel='stylesheet' type='text/css'/>
+        <link href="/static/admin/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+        <link href="/static/admin/css/bootstrap-responsive.min.css" rel="stylesheet" type="text/css"/>
+        <link href="/static/admin/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+        <link href="/static/admin/css/bootswatch.css" rel="stylesheet" type="text/css"/>
+        <link href="/static/admin/css/base.css" rel="stylesheet" type="text/css"/>
+
+        <script src="/static/js/angular.min.js"></script>
+    </head>
+    <body ng-controller="AdminCtrl">
+        <div class="navbar navbar-fixed-top">
+           <div class="navbar-inner">
+             <div class="container">
+               <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                 <span class="icon-bar"></span>
+                 <span class="icon-bar"></span>
+                 <span class="icon-bar"></span>
+               </a>
+               <a class="brand" href="../">MarinhoBrandao.com</a>
+               <div class="nav-collapse collapse" id="main-menu">
+                <ul class="nav" id="main-menu-left">
+                  <li ng-repeat="item in menuItems" id="{{item.Id}}">
+                    <a id="swatch-link" href="{{item.Url}}">{{item.Label}}</a>
+                  </li>
+                </ul>
+               </div>
+             </div>
+           </div>
+        </div>
+
+        <div class="container">
+            <section id="content" ng-view>
+<!-- CONTENT -->
+            </section>
+
+            <hr>
+
+            <footer id="footer">
+                <div class="inner">
+                    Copyright &copy; 2008-2013 - Marinho Brandao - Powered by AngularJS, Go, MongoDB, Nginx, Ubuntu Linux and other free software
+                </div>
+            </footer>
+        </div>
+
+        <script src="/static/admin/js/ui-bootstrap-0.4.0.min.js"></script>
+        <script src="/static/admin/js/ui-bootstrap-tpls-0.4.0.min.js"></script>
+        <script src="/static/admin/js/app.js"></script>
+        <script src="/static/admin/js/controllers.js"></script>
+    </body>
+</html>
