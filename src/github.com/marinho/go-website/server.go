@@ -44,6 +44,8 @@ type Configuration struct {
     StaticRoot string
     TemplatesRoot string
     AuthSecret string
+    AdminUsername string
+    AdminPassword string
 }
 var systemConf Configuration
 
@@ -53,7 +55,8 @@ func defaultConfiguration() Configuration {
         curDir = ""
     }
     return Configuration{DBHostname:"localhost", DBName:"mb", StaticRoot:filepath.Join(curDir,"static"),
-        TemplatesRoot:filepath.Join(curDir,"templates"), AuthSecret:""}
+        TemplatesRoot:filepath.Join(curDir,"templates"), AuthSecret:"", AdminUsername:"admin",
+        AdminPassword:"123"}
 }
 
 func loadConfiguration(filePath string) Configuration {
@@ -199,7 +202,6 @@ func RequireSuperuser(handler func(http.ResponseWriter, *http.Request)) func(htt
 // Home page handler using template home.html
 func HomeHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
-
     c.Header().Add("Content-Type", "text/html")
 
     // Not found
@@ -221,16 +223,39 @@ func HomeHandler(c http.ResponseWriter, req *http.Request) {
 
 // Login page handler
 func LoginHandler(c http.ResponseWriter, req *http.Request) {
-    log.Println(req.URL)
+    var data string
+    var err error
+    var session *sessions.Session
 
-    // Starts a session
-    session, err := GetSession(c, req)
+    log.Println(req.URL)
+    c.Header().Add("Content-Type", "text/json")
+
+    // Validates user
+    body, err := ioutil.ReadAll(req.Body)
     if err == nil {
-        session.Values["secret"] = systemConf.AuthSecret
-        session.Save(req, c)
+        postValues, err := url.ParseQuery(string(body))
+        if err == nil {
+            // User validation
+            if len(postValues["Username"]) > 0 && postValues["Username"][0] == systemConf.AdminUsername &&
+               len(postValues["Password"]) > 0 && postValues["Password"][0] == systemConf.AdminPassword {
+                // Starts a session
+                session, err = GetSession(c, req)
+                if err == nil {
+                    session.Values["secret"] = systemConf.AuthSecret
+                    session.Save(req, c)
+                }
+            }
+        }
     }
 
-    http.Redirect(c, req, "/", 302)
+    if session == nil {
+        data = fmt.Sprintf("{\"result\":\"error\", \"message\":\"Invalid login\"}")
+    } else {
+        data = fmt.Sprintf("{\"result\":\"ok\", \"message\":\"User logged successfully\"}")
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
 }
 
 // Menu items handler for the API

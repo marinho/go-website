@@ -1,9 +1,38 @@
 /* Controllers */
 
 function AdminCtrl($scope, $http) {
-    $http.get('/api/admin/menu/').success(function(data){
-        $scope.menuItems = data.items;
-    });
+    $scope.updateMenu = function(){
+        $http.get('/api/admin/menu/').success(function(data){
+            $scope.menuItems = data.items;
+        });
+    }
+    $scope.updateMenu();
+}
+
+function LoginCtrl($scope, $http) {
+    $scope.login = {Username:"", Password:""}
+    
+    // Login
+    $scope.submitLoginForm = function() {
+        var params = {
+            Username: $scope.login.Username,
+            Password: $scope.login.Password
+        };
+
+        $scope.alerts = [];
+        $http.post('/login/', $scope.encodeUrlVars(params)).success(function(data){
+            var type = data.result == 'error' ? 'error' : 'success';
+            $scope.addAlert(data.message, type);
+        });
+    }
+
+    $scope.alerts = [];
+    $scope.addAlert = function(msg, type) {
+        $scope.alerts.push({msg:msg, type:type});
+    };
+    $scope.closeAlert = function(index) {
+        $scope.alerts.splice(index, 1);
+    };
 }
 
 function BlogPostCtrl($scope, $http) {

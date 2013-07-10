@@ -1,0 +1,14 @@
+<div class="page-header">
+    <h1>Login</h1>
+</div>
+
+<div ng-controller="LoginCtrl">
+    <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+
+    <form name="login">
+        <div><label>Username</label><input type="text" ng-model="login.Username" ng-required="true" required/></div>
+        <div><label>Password</label><input type="password" ng-model="login.Password" ng-required="true" required/></div>
+    </form>
+
+    <a class="btn btn-primary" href="javascript:void(0)" ng-click="submitLoginForm()">Login</a>
+</div>
