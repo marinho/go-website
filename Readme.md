@@ -50,5 +50,5 @@ go run src/github.com/marinho/go-website/server.go
   or even sell it compiled. You just should refer to this developer as its original
   author.
 * The bootstrap template was found in http://bootswatch.com/spacelab/ and was made
-  by [http://thomaspark.me/](Thomas Park)
+  by Thomas Park ( http://thomaspark.me/ )
 
