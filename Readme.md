@@ -43,3 +43,7 @@ go run src/github.com/marinho/go-website/server.go
 1. Better configuration tools
 1. Fixtures loader command
 
+## Credits
+
+TODO: write here the credits for the template author
+
