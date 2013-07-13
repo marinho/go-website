@@ -823,7 +823,8 @@ func SetUrls() {
     http.Handle("/", r)
 }
 
-func SetupCommand() {
+// Main routine
+func ServerMain() {
     // Parsing command line parameters
     params := loadParameters()
     var err error
@@ -845,11 +846,7 @@ func SetupCommand() {
 
     // Optional. Switch the session to a monotonic behavior.
     dbDefaultConn.SetMode(mgo.Monotonic, true)
-}
 
-// Main routine
-func ServerMain() {
-    SetupCommand()
     SetUrls()
 
     // Start serving!
