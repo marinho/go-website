@@ -804,14 +804,14 @@ func SetUrls() {
 
     // Blog posts
     r.HandleFunc("/api/blog/post/", BlogPostListHandler)
-    r.HandleFunc("/api/blog/post/{postId:\\w+}/", BlogPostInfoHandler)
     r.HandleFunc("/api/blog/post/add/", RequireSuperuser(BlogPostAddHandler))
+    r.HandleFunc("/api/blog/post/{postId:\\w+}/", BlogPostInfoHandler)
     r.HandleFunc("/api/blog/post/{postId:\\w+}/delete/", RequireSuperuser(BlogPostDeleteHandler))
 
     // Pages
     r.HandleFunc("/api/page/", PageListHandler)
-    r.HandleFunc("/api/page/{pageId:[\\w\\-]+}/", PageInfoHandler)
     r.HandleFunc("/api/page/add/", RequireSuperuser(PageAddHandler))
+    r.HandleFunc("/api/page/{pageId:[\\w\\-]+}/", PageInfoHandler)
     r.HandleFunc("/api/page/{pageId:\\w+}/delete/", RequireSuperuser(PageDeleteHandler))
     r.HandleFunc("/api/page/by-slug/{pageSlug:[\\w\\-]+}/", PageInfoHandler)
     r.HandleFunc("/{pageSlug:[\\w\\-]+}", PageViewHandler)
