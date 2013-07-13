@@ -4,7 +4,7 @@
             <h1>{{post.Title}}</h1>
             <div class="post-details">
                 <span class="post-author">{{post.Author}}, {{post.PubDate | date:'MMM d yyyy @ H:mm'}}</span>
-                <span class="post-tags">Tags: <span class="post-tag" ng-repeat="tag in post.Tags">{{tag}}</span>
+                <span class="post-tags" ng-show="post.Tags.length">Tags: <span class="post-tag" ng-repeat="tag in post.Tags">{{tag}}</span>
                 </span>
             </div>
             <div class="post-content" ng-bind-html-unsafe="processMarkdown(post.Content)"></div>

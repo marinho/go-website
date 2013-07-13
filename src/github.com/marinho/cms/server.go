@@ -1,4 +1,4 @@
-package main
+package cms
 
 import (
     "fmt"
@@ -14,12 +14,10 @@ import (
     "strconv"
     "errors"
     "strings"
-    //"time"
     "labix.org/v2/mgo"
-    //"labix.org/v2/mgo/bson"
     "github.com/gorilla/mux"
     "github.com/gorilla/sessions"
-    "github.com/marinho/go-website"
+    //"github.com/marinho/cms"
 )
 
 const VERSION = "0.1"
@@ -309,7 +307,7 @@ func BlogPostListHandler(c http.ResponseWriter, req *http.Request) {
     c.Header().Add("Content-Type", "text/json")
 
     // Posts from database
-    blogPostsList, err := cms.GetRecentBlogPosts(dbDefaultConn.DB(systemConf.DBName))
+    blogPostsList, err := GetRecentBlogPosts(dbDefaultConn.DB(systemConf.DBName))
     if err == nil {
         // Encoding to JSON
         b, err := json.Marshal(blogPostsList)
@@ -330,7 +328,7 @@ func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
     c.Header().Add("Content-Type", "text/json")
     var data string
     var err error
-    var blogPost cms.BlogPost
+    var blogPost BlogPost
     tags := make([]string,0)
 
     // Method not allowed
@@ -351,7 +349,7 @@ func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
             } else {
                 title := postValues["Title"][0]
                 content := postValues["Content"][0]
-                slug := cms.Slugify(title)
+                slug := Slugify(title)
                 if len(postValues["Tags"]) > 0 {
                     tags2 := strings.Split(postValues["Tags"][0], ",")
                     for iTag := range tags2 {
@@ -361,8 +359,8 @@ func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
                     }
                 }
 
-                blogPost = cms.BlogPost{Title:title, Content:content, Published:true, Slug:slug, Author:DEFAULT_AUTHOR, Tags:tags}
-                err = cms.InsertNewBlogPost(dbDefaultConn.DB(systemConf.DBName), &blogPost)
+                blogPost = BlogPost{Title:title, Content:content, Published:true, Slug:slug, Author:DEFAULT_AUTHOR, Tags:tags}
+                err = InsertNewBlogPost(dbDefaultConn.DB(systemConf.DBName), &blogPost)
             }
         }
     }
@@ -380,7 +378,7 @@ func BlogPostAddHandler(c http.ResponseWriter, req *http.Request) {
 func BlogPostInfoHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
     c.Header().Add("Content-Type", "text/json")
-    var post cms.BlogPost
+    var post BlogPost
     var err error
     tags := make([]string,0)
     data := "{\"result\":\"error\"}"
@@ -389,7 +387,7 @@ func BlogPostInfoHandler(c http.ResponseWriter, req *http.Request) {
     args := mux.Vars(req)
 
     // Loading blog post
-    post, err = cms.GetBlogPost(dbDefaultConn.DB(systemConf.DBName), args["postId"])
+    post, err = GetBlogPost(dbDefaultConn.DB(systemConf.DBName), args["postId"])
 
     // Renders the template
     if err != nil {
@@ -441,7 +439,7 @@ func BlogPostInfoHandler(c http.ResponseWriter, req *http.Request) {
                     }
                     post.Tags = tags
 
-                    err = cms.UpdateBlogPost(dbDefaultConn.DB(systemConf.DBName), &post)
+                    err = UpdateBlogPost(dbDefaultConn.DB(systemConf.DBName), &post)
                 }
             }
         }
@@ -468,7 +466,7 @@ func BlogPostDeleteHandler(c http.ResponseWriter, req *http.Request) {
     c.Header().Add("Content-Type", "text/json")
     var data string
     var err error
-    var blogPost cms.BlogPost
+    var blogPost BlogPost
 
     // Method not allowed
     if req.Method != "POST" {
@@ -480,7 +478,7 @@ func BlogPostDeleteHandler(c http.ResponseWriter, req *http.Request) {
     args := mux.Vars(req)
 
     // Load blog post
-    err = cms.DeleteBlogPost(dbDefaultConn.DB(systemConf.DBName), args["postId"])
+    err = DeleteBlogPost(dbDefaultConn.DB(systemConf.DBName), args["postId"])
 
     if err != nil {
         http.Error(c, "Not found", http.StatusNotFound)
@@ -505,7 +503,7 @@ func PageListHandler(c http.ResponseWriter, req *http.Request) {
     c.Header().Add("Content-Type", "text/json")
 
     // Posts from database
-    pagesList, err := cms.ListPages(dbDefaultConn.DB(systemConf.DBName))
+    pagesList, err := ListPages(dbDefaultConn.DB(systemConf.DBName))
     if err == nil {
         // Encoding to JSON
         b, err := json.Marshal(pagesList)
@@ -523,7 +521,7 @@ func PageListHandler(c http.ResponseWriter, req *http.Request) {
 func PageInfoHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
     c.Header().Add("Content-Type", "text/json")
-    var page cms.Page
+    var page Page
     var err error
     tags := make([]string,0)
     data := "{\"result\":\"error\"}"
@@ -533,9 +531,9 @@ func PageInfoHandler(c http.ResponseWriter, req *http.Request) {
 
     // Loading page
     if args["pageSlug"] != "" {
-        page, err = cms.GetPageBySlug(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
+        page, err = GetPageBySlug(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
     } else {
-        page, err = cms.GetPage(dbDefaultConn.DB(systemConf.DBName), args["pageId"])
+        page, err = GetPage(dbDefaultConn.DB(systemConf.DBName), args["pageId"])
     }
 
     // Renders the template
@@ -588,7 +586,7 @@ func PageInfoHandler(c http.ResponseWriter, req *http.Request) {
                     }
                     page.Tags = tags
 
-                    err = cms.UpdatePage(dbDefaultConn.DB(systemConf.DBName), &page)
+                    err = UpdatePage(dbDefaultConn.DB(systemConf.DBName), &page)
                 }
             }
         }
@@ -629,7 +627,7 @@ func PageViewHandler(c http.ResponseWriter, req *http.Request) {
     if args["pageSlug"] == "404" {
         found = true
     } else {
-        found = cms.PageExists(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
+        found = PageExists(dbDefaultConn.DB(systemConf.DBName), args["pageSlug"])
     }
 
     // Page not found
@@ -656,7 +654,7 @@ func PageAddHandler(c http.ResponseWriter, req *http.Request) {
     c.Header().Add("Content-Type", "text/json")
     var data string
     var err error
-    var page cms.Page
+    var page Page
     tags := make([]string,0)
 
     // Method not allowed
@@ -689,8 +687,8 @@ func PageAddHandler(c http.ResponseWriter, req *http.Request) {
                     }
                 }
 
-                page = cms.Page{Title:title, Content:content, Published:true, Slug:slug, Author:DEFAULT_AUTHOR, Tags:tags}
-                err = cms.InsertNewPage(dbDefaultConn.DB(systemConf.DBName), &page)
+                page = Page{Title:title, Content:content, Published:true, Slug:slug, Author:DEFAULT_AUTHOR, Tags:tags}
+                err = InsertNewPage(dbDefaultConn.DB(systemConf.DBName), &page)
             }
         }
     }
@@ -711,7 +709,7 @@ func PageDeleteHandler(c http.ResponseWriter, req *http.Request) {
     c.Header().Add("Content-Type", "text/json")
     var data string
     var err error
-    var page cms.Page
+    var page Page
 
     // Method not allowed
     if req.Method != "POST" {
@@ -723,7 +721,7 @@ func PageDeleteHandler(c http.ResponseWriter, req *http.Request) {
     args := mux.Vars(req)
 
     // Load blog post
-    err = cms.DeletePage(dbDefaultConn.DB(systemConf.DBName), args["pageId"])
+    err = DeletePage(dbDefaultConn.DB(systemConf.DBName), args["pageId"])
 
     if err != nil {
         http.Error(c, "Not found", http.StatusNotFound)
@@ -786,31 +784,7 @@ func AdminMenuHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
-// Main routine
-
-func main() {
-    // Parsing command line parameters
-    params := loadParameters()
-    var err error
-
-    if params.Help {
-        showHelp()
-        os.Exit(0)
-    }
-
-    // Reading configuration file
-    systemConf = loadConfiguration(params.ConfigurationFile)
-
-    // Load connections
-    dbDefaultConn, err = mgo.Dial(systemConf.DBHostname)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer dbDefaultConn.Close()
-
-    // Optional. Switch the session to a monotonic behavior.
-    dbDefaultConn.SetMode(mgo.Monotonic, true)
-
+func SetUrls() {
     // URL routes
     r := mux.NewRouter()
 
@@ -847,6 +821,36 @@ func main() {
     http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(systemConf.StaticRoot))))
     http.Handle("/templates/", http.StripPrefix("/templates/", http.FileServer(http.Dir(systemConf.TemplatesRoot))))
     http.Handle("/", r)
+}
+
+func SetupCommand() {
+    // Parsing command line parameters
+    params := loadParameters()
+    var err error
+
+    if params.Help {
+        showHelp()
+        os.Exit(0)
+    }
+
+    // Reading configuration file
+    systemConf = loadConfiguration(params.ConfigurationFile)
+
+    // Load connections
+    dbDefaultConn, err = mgo.Dial(systemConf.DBHostname)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer dbDefaultConn.Close()
+
+    // Optional. Switch the session to a monotonic behavior.
+    dbDefaultConn.SetMode(mgo.Monotonic, true)
+}
+
+// Main routine
+func ServerMain() {
+    SetupCommand()
+    SetUrls()
 
     // Start serving!
     log.Fatal(http.ListenAndServe(HTTP_ADDRESS, nil))
