@@ -1,12 +1,6 @@
 <div class="inner">
     <article class="page-view">
         <h1>{{pageInfo.Title}}</h1>
-        <div class="page-details">
-            <span class="page-author">{{pageInfo.Author}}, {{pageInfo.PubDate | date:'MMM d yyyy @ H:mm'}}</span>
-            <a href="javascript:void(0)" class="page-delete" ng-click="deletePage(pageInfo.Slug)" ng-show="isSuperuser">Delete page</a>
-            <span class="page-tags">Tags: <span class="page-tag" ng-repeat="tag in pageInfo.Tags">{{tag}}</span>
-            </span>
-        </div>
         <div class="page-content" ng-bind-html-unsafe="processMarkdown(pageInfo.Content)"></div>
     </article>
 </div>

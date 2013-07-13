@@ -114,12 +114,9 @@ body>#menu>.inner {
     width: 820px;
 }
 
-.blog-post h1 {
+.blog-post h1, .page-view h1 {
     margin: 0 0 10px 0;
-}
-
-.page-view h1 {
-    margin: 0 0 10px 0;
+    font-size: 1.8em;
 }
 
 .blog-post .post-content {
