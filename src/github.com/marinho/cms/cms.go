@@ -32,6 +32,17 @@ type Page struct {
     Tags []string
 }
 
+const PHOTO_COLL_NAME = "photos"
+type Photo struct {
+    Id bson.ObjectId `bson:"_id,omitempty"`
+    Filename string // In Textile markup format
+    MimeType string
+    Published bool
+    PubDate time.Time //bson.MongoTimestamp
+    Author string
+    Tags []string
+}
+
 /* GENERAL */
 
 // Returns the string in small letters, replacing spaces for hifens
@@ -186,5 +197,35 @@ func DeletePage(db *mgo.Database, pageId string) error {
     pageColl = db.C(PAGE_COLL_NAME)
 
     return pageColl.Remove(bson.M{"_id":bson.ObjectIdHex(pageId)})
+}
+
+/* PHOTOS */
+
+// Inserts a new photo
+func InsertNewPhoto(db *mgo.Database, photo *Photo) error {
+    var photoColl *mgo.Collection
+    photoColl = db.C(PHOTO_COLL_NAME)
+
+    // Default empty fields
+    photo.Id = bson.NewObjectId()
+    photo.PubDate = time.Now()
+
+    // Insert
+    err := photoColl.Insert(photo)
+
+    return err
+}
+
+// Returns a list of photos instances
+func ListPhotos(db *mgo.Database) ([]Photo, error) {
+    var photos []Photo
+    var photoColl *mgo.Collection
+
+    // Auto Disptach info objects
+    photoColl = db.C(PHOTO_COLL_NAME)
+    query := photoColl.Find(bson.M{"published":true}).Sort("-pubdate")
+
+    err := query.All(&photos)
+    return photos, err
 }
 

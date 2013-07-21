@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+    <head>
+        <link href="/static/admin/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+        <link href="/static/admin/css/bootstrap-responsive.min.css" rel="stylesheet" type="text/css"/>
+        <link href="/static/admin/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+        <link href="/static/admin/css/bootswatch.css" rel="stylesheet" type="text/css"/>
+        <link href="/static/admin/css/base.css" rel="stylesheet" type="text/css"/>
+    </head>
+
+    <body>
+        <form method="post" enctype="multipart/form-data" action="/admin/upload-photos/"> <!-- FIXME: to proper URL -->
+            <input type="file" name="media" multiple/>
+            <hr/>
+            <button class="btn btn-success" type="submit">Upload</button>
+        </form>
+    </body>
+</html>

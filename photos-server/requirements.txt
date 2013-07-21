@@ -1,0 +1,3 @@
+# sudo apt-get install libcurl4-openssl-dev libwebp-dev
+thumbor
+pymongo

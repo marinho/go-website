@@ -43,6 +43,7 @@ go run src/github.com/marinho/go-website/server.go
 1. Better configuration tools
 1. Fixtures loader command
 1. Auth module with users instead of hard coded
+1. Cover with tests
 
 ## Copyrights
 

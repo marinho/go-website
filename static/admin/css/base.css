@@ -2,3 +2,8 @@
     float: right;
 }
 
+#photos-upload {
+    width: 525px;
+    border: none;
+}
+

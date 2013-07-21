@@ -2,5 +2,6 @@
     <article class="page-view">
         <h1>{{pageInfo.Title}}</h1>
         <div class="page-content" ng-bind-html-unsafe="processMarkdown(pageInfo.Content)"></div>
+        <div ng-include src="extraTemplate"></div>
     </article>
 </div>

@@ -17,7 +17,7 @@ import (
     "labix.org/v2/mgo"
     "github.com/gorilla/mux"
     "github.com/gorilla/sessions"
-    //"github.com/marinho/cms"
+    "github.com/nu7hatch/gouuid"
 )
 
 const VERSION = "0.1"
@@ -40,6 +40,7 @@ type Configuration struct {
     DBName string
 
     StaticRoot string
+    PhotosRoot string
     TemplatesRoot string
     AuthSecret string
     AdminUsername string
@@ -54,7 +55,7 @@ func defaultConfiguration() Configuration {
     }
     return Configuration{DBHostname:"localhost", DBName:"mb", StaticRoot:filepath.Join(curDir,"static"),
         TemplatesRoot:filepath.Join(curDir,"templates"), AuthSecret:"", AdminUsername:"admin",
-        AdminPassword:"123"}
+        AdminPassword:"123", PhotosRoot:filepath.Join(curDir,"static/photos")}
 }
 
 func loadConfiguration(filePath string) Configuration {
@@ -518,6 +519,7 @@ func PageListHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
+// Page details
 func PageInfoHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
     c.Header().Add("Content-Type", "text/json")
@@ -738,12 +740,79 @@ func PageDeleteHandler(c http.ResponseWriter, req *http.Request) {
     io.WriteString(c, data)
 }
 
+// Photos list handler for the API
+func PhotoListHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    data := "{\"photos\":[]}"
+
+    c.Header().Add("Content-Type", "text/json")
+
+    // Posts from database
+    photosList, err := ListPhotos(dbDefaultConn.DB(systemConf.DBName))
+    if err == nil {
+        // Encoding to JSON
+        b, err := json.Marshal(photosList)
+        if err == nil {
+            data = "{\"photos\":" + string(b) + "}"
+        } else {
+            fmt.Println("error:", err)
+        }
+    }
+
+    c.Header().Add("Content-Length", strconv.Itoa(len(data)))
+    io.WriteString(c, data)
+}
+
+func AdminUploadPhotosHandler(c http.ResponseWriter, req *http.Request) {
+    log.Println(req.URL)
+    c.Header().Add("Content-Type", "text/html")
+    var fileName string
+    var filePath string
+    var mimeType string
+    var photo Photo
+
+    // Reading uploaded file
+    file, handler, err := req.FormFile("media")
+    if err != nil {
+        http.Error(c, fmt.Sprintf("%v",err), http.StatusInternalServerError)
+        return
+    }
+    data, err := ioutil.ReadAll(file)
+    if err != nil || data == nil {
+        http.Error(c, fmt.Sprintf("%v",err), http.StatusInternalServerError)
+        return
+    }
+
+    // Generating file name
+    newUuid, err := uuid.NewV4()
+    if err != nil {
+        http.Error(c, fmt.Sprintf("%v",err), http.StatusInternalServerError)
+        return
+    }
+    fileName = strings.Replace(newUuid.String(), "-", "", -1) + strings.ToLower(filepath.Ext(handler.Filename))
+    filePath = filepath.Join(systemConf.PhotosRoot, fileName)
+    mimeType = handler.Header["Content-Type"][0]
+    log.Println("xxxxx", filePath, mimeType) // XXX
+
+    // Saving file in file system
+    err = ioutil.WriteFile(filePath, data, 0777)
+    if err != nil {
+        http.Error(c, fmt.Sprintf("%v",err), http.StatusInternalServerError)
+        return
+    }
+
+    // Creating in database
+    photo = Photo{Filename:fileName, MimeType:mimeType, Published:true, Author:DEFAULT_AUTHOR}
+    err = InsertNewPhoto(dbDefaultConn.DB(systemConf.DBName), &photo)
+
+    io.WriteString(c, "<script>parent.closePhotosForm()</script>")
+}
+
 /* Admin handlers */
 
 // Home page handler for Administration area
 func AdminHomeHandler(c http.ResponseWriter, req *http.Request) {
     log.Println(req.URL)
-
     c.Header().Add("Content-Type", "text/html")
 
     content, err := renderAdminTemplate("base.html")
@@ -769,6 +838,7 @@ func AdminMenuHandler(c http.ResponseWriter, req *http.Request) {
     menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/", Id:"admin-home", Label:"Home"})
     menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/pages/", Id:"admin-pages", Label:"Pages"})
     menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/blog-posts/", Id:"admin-blog-posts", Label:"Blog Posts"})
+    menuItemsList = append(menuItemsList, MenuItem{Url:"/admin/photos/", Id:"admin-photos", Label:"Photos"})
     menuItemsList = append(menuItemsList, MenuItem{Url:"/logout/", Id:"admin-logout", Label:"Logout"})
 
     // Encoding to JSON
@@ -796,6 +866,8 @@ func SetUrls() {
     r.HandleFunc("/admin/", AdminHomeHandler)
     r.HandleFunc("/admin/pages/", RequireSuperuser(AdminHomeHandler))
     r.HandleFunc("/admin/blog-posts/", RequireSuperuser(AdminHomeHandler))
+    r.HandleFunc("/admin/photos/", RequireSuperuser(AdminHomeHandler))
+    r.HandleFunc("/admin/upload-photos/", RequireSuperuser(AdminUploadPhotosHandler))
     r.HandleFunc("/api/admin/menu/", RequireSuperuser(AdminMenuHandler))
 
     // General API methods
@@ -816,6 +888,10 @@ func SetUrls() {
     r.HandleFunc("/api/page/by-slug/{pageSlug:[\\w\\-]+}/", PageInfoHandler)
     r.HandleFunc("/{pageSlug:[\\w\\-]+}", PageViewHandler)
     r.HandleFunc("/{pageSlug:[\\w\\-]+}/", PageViewHandler) // This is needed to support both, but maybe there's an alternative
+
+    // Photos
+    r.HandleFunc("/api/photo/", PhotoListHandler)
+    r.HandleFunc("/api/photo/published/", PhotoListHandler) // TODO: filter to return only published:True
 
     // Hardcoded ones
     http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(systemConf.StaticRoot))))

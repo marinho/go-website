@@ -180,3 +180,26 @@ function PageCtrl($scope, $routeParams, $http, $location) {
     };
 }
 
+function PhotoCtrl($scope, $routeParams, $http, $location) {
+    // Function to update blog post list
+    $scope.updatePhotos = function() {
+        $http.get('/api/photo/').success(function(data){
+            $scope.photos = data.photos;
+        });
+    }
+    $scope.updatePhotos();
+    
+    // Modal for form
+    $scope.showPhotosForm = function () {
+        $scope.openPhotosForm = true;
+    };
+    $scope.closePhotosForm = function () {
+        $scope.openPhotosForm = false;
+        $scope.updatePhotos();
+    };
+}
+
+function closePhotosForm() {
+    angular.element(document.getElementById('photos-page-header')).scope().closePhotosForm();
+}
+

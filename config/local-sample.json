@@ -1,6 +1,9 @@
 {"DBHostname": "localhost",
  "DBName": "mb",
  "StaticRoot": "static",
+ "PhotosRoot": "static/photos",
  "TemplatesRoot": "templates",
- "AuthSecret": "HeyHoLetsGo"
+ "AuthSecret": "HeyHoLetsGo",
+ "AdminUsername": "admin",
+ "AdminPassword": "1"
 }

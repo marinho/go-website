@@ -7,18 +7,22 @@ var app = angular.module('mbAdmin', ['ui.bootstrap'], function($routeProvider, $
         .when('/', {
             templateUrl: '/templates/admin/home.html',
             controller: LoginCtrl
-        })
+            })
         .when('/404', {
             templateUrl: '/templates/admin/404.html'
-        })
+            })
         .when('/pages/', {
             templateUrl: '/templates/admin/pages.html',
             controller: PageCtrl
-        })
+            })
         .when('/blog-posts/', {
             templateUrl: '/templates/admin/blog-posts.html',
             controller: BlogPostCtrl
-        })
+            })
+        .when('/photos/', {
+            templateUrl: '/templates/admin/photos.html',
+            controller: PhotoCtrl
+            })
         .otherwise({redirectTo: '/404'});
 });
 

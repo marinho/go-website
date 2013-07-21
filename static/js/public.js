@@ -70,6 +70,11 @@ function BlogPostCtrl($scope, $http) {
 function PageCtrl($scope, $routeParams, $http, $location) {
     $scope.params = $routeParams;
 
+    // Sets a different template for Real Life
+    if ($scope.params.pageSlug == 'real-life') {
+        $scope.extraTemplate = '/templates/real-life.html';
+    }
+
     // Function to load page data
     $scope.loadPage = function() {
         $http.get('/api/page/by-slug/'+$scope.params.pageSlug+'/')
@@ -83,5 +88,17 @@ function PageCtrl($scope, $routeParams, $http, $location) {
             });
     }
     $scope.loadPage();
+
+    // Real life photos
+    $scope.loadRealLifePhotos = function() {
+        $http.get('/api/photo/published/')
+            .success(function(data){
+                $scope.realLifePhotos = data.photos;
+            })
+            .error(function(data, status, headers, config) {
+                console.log('loadRealLifePhotos', data, status, headers, config); // XXX
+            });
+    }
+    $scope.loadRealLifePhotos();
 }
 
