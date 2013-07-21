@@ -142,3 +142,14 @@ form#new-post input[type=text], form#new-post textarea {
 form#new-post textarea {
     height: 200px;
 }
+
+#realLifePhotos {
+    display: table;
+    width: 100%;
+}
+
+#realLifePhotos>a {
+    display: table-cell;
+    text-align: center;
+}
+
